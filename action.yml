@@ -1,0 +1,78 @@
+name: OutcomeCI Workflow Sync
+description: Validate and sync repository workflow folders to OutcomeCI
+author: OutcomeCI
+branding:
+  icon: upload-cloud
+  color: purple
+inputs:
+  mode:
+    description: validate (no credentials needed) or sync
+    default: validate
+  directory:
+    description: Repository-relative root containing one folder per workflow
+    default: .outcomeci/workflows
+  workspace-id:
+    description: OutcomeCI workspace ID (required for sync)
+  token:
+    description: OutcomeCI workspace key with workflow write access (required for sync)
+  api-url:
+    description: OutcomeCI HTTPS API origin
+    default: https://api.outcomeci.com
+  branch:
+    description: Branch permitted to sync
+    default: main
+  github-token:
+    description: GitHub token with contents read permission to check branch freshness
+    default: ${{ github.token }}
+  adopt-workflows:
+    description: Newline-separated names of unowned cloud workflows to adopt on an exact bundle match
+outputs:
+  validated:
+    description: Number of validated workflow bundles
+    value: ${{ steps.sync.outputs.validated }}
+  published:
+    description: JSON array of published workflow names
+    value: ${{ steps.sync.outputs.published }}
+  unchanged:
+    description: JSON array of unchanged workflow names
+    value: ${{ steps.sync.outputs.unchanged }}
+  removed:
+    description: JSON array of repository-owned workflows absent locally (retained in OutcomeCI)
+    value: ${{ steps.sync.outputs.removed }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: '3.12'
+    - name: Install OutcomeCI compiler in an isolated environment
+      id: setup
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        env_dir="$(mktemp -d "$RUNNER_TEMP/outcomeci-sync.XXXXXX")"
+        python -I -m venv "$env_dir"
+        "$env_dir/bin/python" -I -m pip --isolated install --disable-pip-version-check --index-url https://pypi.org/simple -r "$ACTION_PATH/requirements.txt"
+        echo "python=$env_dir/bin/python" >> "$GITHUB_OUTPUT"
+    - name: Validate or sync workflow bundles
+      id: sync
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        ACTION_PYTHON: ${{ steps.setup.outputs.python }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        INPUT_WORKSPACE_ID: ${{ inputs.workspace-id }}
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_BRANCH: ${{ inputs.branch }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_ADOPT_WORKFLOWS: ${{ inputs.adopt-workflows }}
+      run: |
+        set -euo pipefail
+        if [[ -n "$INPUT_TOKEN" ]]; then
+          echo "::add-mask::$INPUT_TOKEN"
+        fi
+        "$ACTION_PYTHON" -I "$ACTION_PATH/scripts/run.py"

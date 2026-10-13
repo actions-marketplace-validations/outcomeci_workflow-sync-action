@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: ruff check src scripts tests
+      - run: ruff format --check src scripts tests
+      - run: python -m pytest -q
+      - name: Smoke test the actual composite action
+        uses: ./
+        with:
+          directory: examples/.outcomeci/workflows
+          mode: validate

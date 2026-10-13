@@ -1,0 +1,6 @@
+apiVersion: outcomeci.workflow/v1
+name: hello
+trigger: manual
+steps:
+  - greet:
+      reason: greet.md
