@@ -186,13 +186,11 @@ def validate(bundle: Bundle) -> None:
                     raise SyncError(
                         f"Instruction references must name a sibling Markdown file: {bundle.path}"
                     )
-            for child in value.values():
-                check_reasons(child)
-        elif isinstance(value, list):
-            for child in value:
-                check_reasons(child)
 
-    check_reasons(bundle.definition)
+    for entry in bundle.definition.get("steps", []):
+        if isinstance(entry, dict):
+            for step in entry.values():
+                check_reasons(step)
     with tempfile.TemporaryDirectory(prefix="outcomeci-sync-validate-") as temporary:
         root = Path(temporary)
         source = root / bundle.filename

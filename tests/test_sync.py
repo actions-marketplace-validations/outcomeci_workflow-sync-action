@@ -6,7 +6,7 @@ import pytest
 
 from outcomeci_sync.client import Client
 from outcomeci_sync.package import SyncError
-from outcomeci_sync.sync import apply, ordered, plan
+from outcomeci_sync.sync import apply, ordered, plan, targets
 
 PROVENANCE = {
     "repository_id": "123",
@@ -161,6 +161,12 @@ def test_existing_external_dispatch_child_is_checked(bundle):
     service.seed(bundle("child", dispatcher="parent"))
     publish(service, [bundle("parent", targets=["child"])])
     assert service.posts[-1]["name"] == "parent"
+
+
+def test_dispatch_payload_is_not_a_dependency():
+    assert list(targets([{"step": {"dispatch": "child", "with": {"dispatch": "data"}}}])) == [
+        "child"
+    ]
 
 
 def test_partial_failure_reports_completed_and_retry_is_idempotent(bundle):
