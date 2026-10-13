@@ -38,7 +38,7 @@ filename works; each workflow folder must contain exactly one definition.
 Minimal publishing step, after `actions/checkout`:
 
 ```yaml
-- uses: outcomeci/workflow-sync-action@v1.0.0
+- uses: outcomeci/workflow-sync-action@v1.0.1
   with:
     mode: sync
     workspace-id: ${{ vars.OUTCOMECI_WORKSPACE_ID }}
